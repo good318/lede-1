@@ -5,105 +5,134 @@
 #
 # Copyright (C) 2020 KFERMercer
 #
-name: OpenWrt-CI2021
+名称：OpenWrt-CI
 
-on:
-  schedule:
-    - cron: 0 20 * * *
-  release:
-    types: [published]
+在：
+  推送：
+    分行：
+      -大师
+  ＃时间表：
+  ＃    -cron：0 20 * * *
+  发布：
+    类型：[已发布]
 
-jobs:
+职位：
 
-  build_openwrt:
+  build_openwrt：
 
-    name: Build OpenWrt firmware
+    名称：构建OpenWrt固件
 
-    runs-on: ubuntu-latest
+    运行：ubuntu-latest
 
-    if: github.event.repository.owner.id == github.event.sender.id
+    如果：github.event.repository.owner.id == github.event.sender.id
 
-    steps:
+    步骤：
 
-      - name: Checkout
-        uses: actions/checkout@v2
-        with:
-          ref: master
+      -名称：结帐
+        用途：actions / checkout @ v2
+        与：
+          参考：大师
 
-      - name: Space cleanup
-        env:
-          DEBIAN_FRONTEND: noninteractive
-        run: |
-          docker rmi `docker images -q`
-          sudo rm -rf /usr/share/dotnet /etc/mysql /etc/php /etc/apt/sources.list.d
-          sudo -E apt-get -y purge azure-cli ghc* zulu* hhvm llvm* firefox google* dotnet* powershell openjdk* mysql* php* android*
-          sudo -E apt-get update
-          sudo -E apt-get -y install build-essential asciidoc binutils bzip2 gawk gettext git libncurses5-dev libz-dev patch python3 unzip zlib1g-dev lib32gcc1 libc6-dev-i386 subversion flex uglifyjs gcc-multilib g++-multilib p7zip p7zip-full msmtp libssl-dev texinfo libglib2.0-dev xmlto qemu-utils upx libelf-dev autoconf automake libtool autopoint device-tree-compiler antlr3 gperf swig
-          sudo -E apt-get -y autoremove --purge
-          sudo -E apt-get clean
-
+      -名称：清理空间
+        env：
+          DEBIAN_FRONTEND：非互动
+        运行：|
+          docker rmi`docker images -q`
+          须藤rm -rf / usr / share / dotnet / etc / mysql / etc / php /etc/apt/sources.list.d
+          须藤-E apt-get -y清除azure-cli ghc * zulu * hhvm llvm * firefox google * dotnet * powershell openjdk * mysql * php * android *
+          sudo -E apt-get更新
+          sudo -E apt-get -y install build-essential asciidoc binutils bzip2 gawk gettext git libncurses5-dev libz-dev patch python3 unzip zlib1g-dev lib32gcc1 libc6-dev-i386 subversion flex uglifyjs gcc-multilib g ++-multilib p7zip p7zip-full msmtp libssl-dev texinfo libglib2.0-dev xmlto qemu-utils upx libelf-dev autoconf automake libtool autopoint device-tree-compiler antlr3 gperf swig libtinfo5
+          须藤-E apt-get -y autoremove --purge
+          须藤-E apt-get clean
+          ＃sudo mkdir -p -m 777 / mnt / openwrt / bin / mnt / openwrt / build_dir / host / mnt / openwrt / build_dir / hostpkg / mnt / openwrt / dl / mnt / openwrt / feeds / mnt / openwrt / staging_dir
+          ＃ln -s / mnt / openwrt / bin ./bin
+          ＃mkdir -p ./build_dir
+          ＃ln -s -f / mnt / openwrt / build_dir / host ./build_dir/host
+          ＃ln -s -f / mnt / openwrt / build_dir / hostpkg ./build_dir/hostpkg
+          ＃ln -s / mnt / openwrt / dl ./dl
+          ＃ln -s / mnt / openwrt / feeds ./feeds
+          ＃ln -s / mnt / openwrt / staging_dir ./staging_dir
           df -h
-
-      - name: Update feeds
-        run: |
-          sed -i 's/#src-git helloworld/src-git helloworld/g' ./feeds.conf.default
-          ./scripts/feeds update -a
+      -名称：更新供稿
+        运行：|
+          ./scripts/feeds更新-a
           ./scripts/feeds install -a
-
-      - name: Generate configuration file
-        run: make defconfig
-
-      - name: Make download
-        run: |
-          make download -j8
-          find dl -size -1024c -exec rm -f {} \;
-
-      - name: Compile firmware
-        run: |
-          make -j$(nproc) || make -j1 V=s
-          echo "======================="
-          echo "Space usage:"
-          echo "======================="
+      -名称：生成配置文件
+        运行：|
+          rm -f ./.config*
+          触摸./.config
+          ＃
+          ＃在cat >> .config << EOF到EOF之间插入你的编译配置，需注意缩进关系
+          ＃例如：
+          猫>> .config << EOF
+          CONFIG_TARGET_IMAGES_GZIP = y
+          CONFIG_KERNEL_BUILD_USER =“ OpenWrt-CI”
+          CONFIG_KERNEL_BUILD_DOMAIN =“天蓝色”
+          紧急行动
+          ＃
+          ＃================================================= ==============
+          ＃ 
+          sed -i's / ^ [\ t] * // g'./.config
+          使defconfig
+      -名称：下载
+        运行：|
+          下载-j8 || 下载-j1 V = s
+          rm -rf $（查找./dl/ -size -1024c）
           df -h
-          echo "======================="
-          du -h --max-depth=1 ./ --exclude=build_dir --exclude=bin
-          du -h --max-depth=1 ./build_dir
-          du -h --max-depth=1 ./bin
-
-      - name: Prepare artifact
-        run: |
-          mkdir -p ./artifact/firmware
+      -名称：编译固件
+        运行：|
+          使-j $（nproc）|| 使-j1 V = s
+          回声“ ======================
+          回显“空间使用情况：”
+          回声“ ======================
+          df -h
+          回声“ ======================
+          du -h ./ --max-depth = 1
+          du -h / mnt / openwrt / --max-depth = 1 || 真的
+      -名称：准备神器
+        运行：|
+          mkdir -p ./工件/固件
           mkdir -p ./artifact/package
           mkdir -p ./artifact/buildinfo
-          rm -rf $(find ./bin/targets/ -type d -name "packages")
-          cp -rf $(find ./bin/targets/ -type f) ./artifact/firmware/
-          cp -rf $(find ./bin/packages/ -type f -name "*.ipk") ./artifact/package/
-          cp -rf $(find ./bin/targets/ -type f -name "*.buildinfo" -o -name "*.manifest") ./artifact/buildinfo/
+          rm -rf $（查找./bin/targets/ -type d -name“ packages”）
+          cp -rf $（查找./bin/targets/ -type f）./artifact/firmware/
+          cp -rf $（查找./bin/packages/ -type f -name“ * .ipk”）./artifact/package/
+          cp -rf $（查找./bin/targets/ -type f -name“ * .buildinfo” -o -name“ * .manifest”）./artifact/buildinfo/
+      -名称：提供buildinfo
+        用途：actions / upload-artifact @ v2
+        与：
+          名称：OpenWrt_buildinfo
+          路径：./artifact/buildinfo/
 
-      - name: Deliver buildinfo
-        uses: actions/upload-artifact@v2
-        with:
-          name: OpenWrt_buildinfo
-          path: ./artifact/buildinfo/
+      -名称：递送包裹
+        用途：actions / upload-artifact @ v2
+        与：
+          名称：OpenWrt_package
+          路径：./artifact/package/
 
-      - name: Deliver package
-        uses: actions/upload-artifact@v2
-        with:
-          name: OpenWrt_package
-          path: ./artifact/package/
+      -名称：提供固件
+        用途：actions / upload-artifact @ v2
+        与：
+          名称：OpenWrt_firmware
+          路径：./bin/targets/
 
-      - name: Deliver firmware
-        uses: actions/upload-artifact@v2
-        with:
-          name: OpenWrt_firmware
-          path: ./bin/targets/
-  
-
-      - name: Upload release asset
-        if: github.event == 'release'
-        uses: svenstaro/upload-release-action@v2
-        with:
-          repo_token: ${{ secrets.YOURTOKEN }}
-          file: ./artifact/firmware/*
-          tag: ${{ github.ref }}
-          file_glob: true
+      -名称：上传发布资产
+        如果：github.event =='release'
+        用途：svenstaro / upload-release-action @ v2
+        与：
+          repo_token：$ {{ secrets.YOURTOKEN }}
+          文件：./ artifact / firmware / *
+          标记：$ {{github.ref}}
+          file_glob：true
+©2021 GitHub，Inc.
+条款
+隐私
+安全
+状态
+文件
+联系GitHub
+价钱
+API
+训练
+博客
+关于
